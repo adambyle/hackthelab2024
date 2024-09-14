@@ -1,4 +1,4 @@
-import requests, json
+import requests
 
 # SANDBOX_KEY = "AE5A38575AAC40D8"
 SANDBOX_KEY = "B2206439EF744BB9"
@@ -67,14 +67,6 @@ def solve_maze(maze_id):
         response = post("/rat/move", body)
         print("MOVE:", response)
         return response
-
-    def smell():
-        body = {
-            "mazeId": maze_id
-        }
-        response = post("/rat/smell", body)
-        print("SMELL:", response)
-        return response["distance"]
     
     def surroundings():
         response = get(f"/rat/{maze_id}/surroundings")
@@ -85,7 +77,6 @@ def solve_maze(maze_id):
 
     map = Map(surroundings())
 
-    eat_mode = False
     cheese_gotten = False
     cheeses = []
 
@@ -96,15 +87,7 @@ def solve_maze(maze_id):
                 data = move(direction)["cell"]
                 map.move_to(direction, data)
                 moved = True
-                if eat_mode:
-                    if map.at.kind == "cheese":
-                        if cheese_gotten:
-                            eat()
-                        else:
-                            cheese_gotten = True
-                            map.at.kind = "open"
-                            grab()
-                elif map.at.kind == "cheese":
+                if map.at.kind == "cheese":
                     if cheese_gotten:
                         cheeses.append(map.at)
                         map.at.kind = "open"
@@ -119,20 +102,12 @@ def solve_maze(maze_id):
                 for cell in map.cells
                 if not cell.visited
             ]
-            path = min(unvisited_paths, key=lambda path: len(path))
+            path = min(unvisited_paths, key=len)
             steps = path_to_directions(list(path))
             for direction in steps:
                 data = move(direction)["cell"]
                 map.move_to(direction, data)
-                if eat_mode:
-                    if map.at.kind == "cheese":
-                        if cheese_gotten:
-                            eat()
-                        else:
-                            cheese_gotten = True
-                            map.at.kind = "open"
-                            grab()
-                elif map.at.kind == "cheese":
+                if map.at.kind == "cheese":
                     if cheese_gotten:
                         cheeses.append(map.at)
                         map.at.kind = "open"
@@ -143,67 +118,49 @@ def solve_maze(maze_id):
     
     end = next(cell for cell in map.cells if cell.kind == "exit")
     
-    if eat_mode:
+
+    if cheese_gotten:
         path_to_end = map.a_star(map.at, end)
         steps = path_to_directions(list(path_to_end))
-
         for direction in steps:
             data = move(direction)["cell"]
             map.move_to(direction, data)
-            if map.at.kind == "cheese":
-                if cheese_gotten:
-                    eat()
-                else:
-                    cheese_gotten = True
-                    map.at.kind = "open"
-                    grab()
-        if cheese_gotten:
-            drop()
+        drop()
 
-        exit()
-    else:
-        if cheese_gotten:
-            path_to_end = map.a_star(map.at, end)
-            steps = path_to_directions(list(path_to_end))
-            for direction in steps:
-                data = move(direction)["cell"]
-                map.move_to(direction, data)
-            drop()
+    print("END FOUND")
+    
+    cheese_paths = [
+        map.a_star(map.at, cheese)
+        for cheese in cheeses
+    ]
+    viable_paths = [
+        path for path in cheese_paths
+        if len(path) * 3 * 2 < 2500
+    ]
 
-        print("END FOUND")
-        
-        cheese_paths = [
-            map.a_star(map.at, cheese)
-            for cheese in cheeses
-        ]
-        viable_paths = [
-            path for path in cheese_paths
-            if len(path) * 3 * 2 < 2500
-        ]
+    print(len(cheeses), "Cheeses")
+    print(len(cheese_paths), "Cheese Paths")
+    print(len(viable_paths), "Viable Paths")
 
-        print(len(cheeses), "Cheeses")
-        print(len(cheese_paths), "Cheese Paths")
-        print(len(viable_paths), "Viable Paths")
+    for path in viable_paths:
+        print("FINDING CHEESE")
+        steps = list(path_to_directions(path))
+        for direction in steps:
+            data = move(direction)["cell"]
+            map.move_to(direction, data)
+        grab()
 
-        for path in viable_paths:
-            print("FINDING CHEESE")
-            steps = list(path_to_directions(path))
-            for direction in steps:
-                data = move(direction)["cell"]
-                map.move_to(direction, data)
-            grab()
+        print("CHEESE GOTTEN")
 
-            print("CHEESE GOTTEN")
+        path_to_end = map.a_star(map.at, end)
+        steps = path_to_directions(list(path_to_end))
+        for direction in steps:
+            data = move(direction)["cell"]
+            map.move_to(direction, data)
+        drop()
 
-            path_to_end = map.a_star(map.at, end)
-            steps = path_to_directions(list(path_to_end))
-            for direction in steps:
-                data = move(direction)["cell"]
-                map.move_to(direction, data)
-            drop()
-
-            print("CHEESE DROPPED")
-        exit()
+        print("CHEESE DROPPED")
+    exit()
 
 class Cell:
     
@@ -285,15 +242,6 @@ class Map:
         self.at.visited = True
         self.add_cell(self.at.y, self.at.x, data)
         self.traveled.append(direction)
-    
-    def backtrack(self):
-        direction = self.traveled.pop()
-        normal_directions = ["north", "east", "south", "west"]
-        reverse_directions = ["south", "west", "north", "east"]
-        index = normal_directions.index(direction)
-        reverse_direction = reverse_directions[index]
-        self.at = self.neighbor(self.at.y, self.at.x, reverse_direction)
-        return reverse_direction
 
     def a_star(self, start: Cell, end: Cell):
 
@@ -352,5 +300,5 @@ def path_to_directions(cells: list[Cell]):
 
 
 mazes = get("/mazes")
-test_maze = mazes[7]["id"]
+test_maze = mazes[5]["id"]
 solve_maze(test_maze)
