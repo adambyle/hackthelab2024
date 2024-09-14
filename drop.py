@@ -95,6 +95,9 @@ def solve_maze(maze_id):
                         cheese_gotten = True
                         map.at.kind = "open"
                         grab()
+                elif map.at.kind == "exit" and cheese_gotten:
+                    cheese_gotten = False
+                    drop()
                 break
         if not moved:
             unvisited_paths = [
@@ -117,14 +120,14 @@ def solve_maze(maze_id):
                         grab()
     
     end = next(cell for cell in map.cells if cell.kind == "exit")
-    
 
+    path_to_end = map.a_star(map.at, end)
+    steps = path_to_directions(list(path_to_end))
+    for direction in steps:
+        data = move(direction)["cell"]
+        map.move_to(direction, data)
+    
     if cheese_gotten:
-        path_to_end = map.a_star(map.at, end)
-        steps = path_to_directions(list(path_to_end))
-        for direction in steps:
-            data = move(direction)["cell"]
-            map.move_to(direction, data)
         drop()
 
     print("END FOUND")
@@ -300,5 +303,5 @@ def path_to_directions(cells: list[Cell]):
 
 
 mazes = get("/mazes")
-test_maze = mazes[5]["id"]
+test_maze = mazes[10]["id"]
 solve_maze(test_maze)
