@@ -89,7 +89,15 @@ def solve_maze(maze_id):
                 moved = True
                 if map.at.kind == "cheese":
                     if cheese_gotten:
-                        cheeses.append(map.at)
+                        eaten = False
+                        if any(cell.kind == "exit" for cell in map.cells):
+                            end = next(cell for cell in map.cells if cell.kind == "exit")
+                            distance = len(map.a_star(map.at, end))
+                            if distance * 2 * 3 > 1500:
+                                eaten = True
+                                eat()
+                        if not eaten:
+                            cheeses.append(map.at)
                         map.at.kind = "open"
                     else:
                         cheese_gotten = True
@@ -303,5 +311,5 @@ def path_to_directions(cells: list[Cell]):
 
 
 mazes = get("/mazes")
-test_maze = mazes[10]["id"]
+test_maze = mazes[6]["id"]
 solve_maze(test_maze)
