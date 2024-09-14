@@ -1,6 +1,7 @@
 import requests, json
 
-SANDBOX_KEY = "AE5A38575AAC40D8"
+# SANDBOX_KEY = "AE5A38575AAC40D8"
+SANDBOX_KEY = "B2206439EF744BB9"
 
 def get(request, body=None):
     response = requests.get(
@@ -103,9 +104,10 @@ def solve_maze(maze_id):
                             cheese_gotten = True
                             map.at.kind = "open"
                             grab()
-                else:
+                elif map.at.kind == "cheese":
                     if cheese_gotten:
                         cheeses.append(map.at)
+                        map.at.kind = "open"
                     else:
                         cheese_gotten = True
                         map.at.kind = "open"
@@ -122,6 +124,22 @@ def solve_maze(maze_id):
             for direction in steps:
                 data = move(direction)["cell"]
                 map.move_to(direction, data)
+                if eat_mode:
+                    if map.at.kind == "cheese":
+                        if cheese_gotten:
+                            eat()
+                        else:
+                            cheese_gotten = True
+                            map.at.kind = "open"
+                            grab()
+                elif map.at.kind == "cheese":
+                    if cheese_gotten:
+                        cheeses.append(map.at)
+                        map.at.kind = "open"
+                    else:
+                        cheese_gotten = True
+                        map.at.kind = "open"
+                        grab()
     
     end = next(cell for cell in map.cells if cell.kind == "exit")
     
@@ -145,13 +163,14 @@ def solve_maze(maze_id):
         exit()
     else:
         if cheese_gotten:
-            end = next(cell for cell in map.cells if cell.kind == "exit")
             path_to_end = map.a_star(map.at, end)
             steps = path_to_directions(list(path_to_end))
+            for direction in steps:
+                data = move(direction)["cell"]
+                map.move_to(direction, data)
             drop()
 
         print("END FOUND")
-        input()
         
         cheese_paths = [
             map.a_star(map.at, cheese)
@@ -162,9 +181,12 @@ def solve_maze(maze_id):
             if len(path) * 3 * 2 < 2500
         ]
 
+        print(len(cheeses), "Cheeses")
+        print(len(cheese_paths), "Cheese Paths")
+        print(len(viable_paths), "Viable Paths")
+
         for path in viable_paths:
             print("FINDING CHEESE")
-            input()
             steps = list(path_to_directions(path))
             for direction in steps:
                 data = move(direction)["cell"]
@@ -172,7 +194,6 @@ def solve_maze(maze_id):
             grab()
 
             print("CHEESE GOTTEN")
-            input()
 
             path_to_end = map.a_star(map.at, end)
             steps = path_to_directions(list(path_to_end))
@@ -182,7 +203,6 @@ def solve_maze(maze_id):
             drop()
 
             print("CHEESE DROPPED")
-            input()
         exit()
 
 class Cell:
@@ -332,5 +352,5 @@ def path_to_directions(cells: list[Cell]):
 
 
 mazes = get("/mazes")
-test_maze = mazes[6]["id"]
+test_maze = mazes[7]["id"]
 solve_maze(test_maze)
