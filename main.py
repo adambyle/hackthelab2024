@@ -1,21 +1,21 @@
 import requests
 
-# SANDBOX_KEY = "AE5A38575AAC40D8"
-# SANDBOX_KEY = "B2206439EF744BB9"
-SANDBOX_KEY = "E890A820F8EE4708"
+# API_KEY = "AE5A38575AAC40D8"
+# API_KEY = "B2206439EF744BB9"
+API_KEY = "E890A820F8EE4708"
 
 def get(request, body=None):
     response = requests.get(
         f"http://api.milabs.xyz/v1/{request}",
         json=body,
-        headers={"X-API-KEY": SANDBOX_KEY})
+        headers={"X-API-KEY": API_KEY})
     return response.json()
 
 def post(request, body=None):
     response = requests.post(
         f"http://api.milabs.xyz/v1/{request}",
         json=body,
-        headers={"X-API-KEY": SANDBOX_KEY})
+        headers={"X-API-KEY": API_KEY})
     return response.json()
 
 def solve_maze(maze_id, cheese_count):
