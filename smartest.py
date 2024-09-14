@@ -1,7 +1,8 @@
 import requests
 
 # SANDBOX_KEY = "AE5A38575AAC40D8"
-SANDBOX_KEY = "B2206439EF744BB9"
+# SANDBOX_KEY = "B2206439EF744BB9"
+SANDBOX_KEY = "E890A820F8EE4708"
 
 def get(request, body=None):
     response = requests.get(
@@ -17,7 +18,7 @@ def post(request, body=None):
         headers={"X-API-KEY": SANDBOX_KEY})
     return response.json()
 
-def solve_maze(maze_id):
+def solve_maze(maze_id, cheese_count):
 
     def reset():
         body = {
@@ -73,40 +74,62 @@ def solve_maze(maze_id):
         print("SURROUNDINGS:", response)
         return response
     
-    reset()
+    # reset()
 
     map = Map(surroundings())
 
     cheese_gotten = False
     cheeses = []
+    found_cheeses = 0
+    exit_found = False
 
-    while not map.exhausted():
+    while (not map.exhausted()) and not (found_cheeses == cheese_count and exit_found):
         moved = False
+
+        def spot_handler():
+            nonlocal found_cheeses, cheese_gotten, exit_found, cheeses
+            if map.at.kind == "cheese":
+                if cheese_gotten:
+                    eaten = False
+                    if any(cell.kind == "exit" for cell in map.cells):
+                        end = next(cell for cell in map.cells if cell.kind == "exit")
+                        distance = len(map.a_star(map.at, end))
+                        if distance * 2 * 3 > 1500:
+                            eaten = True
+                            eat()
+                    if not eaten:
+                        cheeses.append(map.at)
+                    map.at.kind = "open"
+                else:
+                    cheese_gotten = True
+                    map.at.kind = "open"
+                    grab()
+                found_cheeses += 1
+            elif map.at.kind == "exit":
+                if cheese_gotten:
+                    cheese_gotten = False
+                    drop()
+                exit_found = True
+
+        cheese_direction = False
         for direction, neighbor in map.at.neighbors.items():
-            if not neighbor.visited:
+            if neighbor.kind == "cheese" and not neighbor.visited:
                 data = move(direction)["cell"]
                 map.move_to(direction, data)
                 moved = True
-                if map.at.kind == "cheese":
-                    if cheese_gotten:
-                        eaten = False
-                        if any(cell.kind == "exit" for cell in map.cells):
-                            end = next(cell for cell in map.cells if cell.kind == "exit")
-                            distance = len(map.a_star(map.at, end))
-                            if distance * 2 * 3 > 1500:
-                                eaten = True
-                                eat()
-                        if not eaten:
-                            cheeses.append(map.at)
-                        map.at.kind = "open"
-                    else:
-                        cheese_gotten = True
-                        map.at.kind = "open"
-                        grab()
-                elif map.at.kind == "exit" and cheese_gotten:
-                    cheese_gotten = False
-                    drop()
+                cheese_direction = True
+                spot_handler()
                 break
+        
+        if not cheese_direction:
+            for direction, neighbor in map.at.neighbors.items():
+                if not neighbor.visited:
+                    data = move(direction)["cell"]
+                    map.move_to(direction, data)
+                    moved = True
+                    spot_handler()
+                    break
+        
         if not moved:
             unvisited_paths = [
                 map.a_star(map.at, cell)
@@ -118,14 +141,8 @@ def solve_maze(maze_id):
             for direction in steps:
                 data = move(direction)["cell"]
                 map.move_to(direction, data)
-                if map.at.kind == "cheese":
-                    if cheese_gotten:
-                        cheeses.append(map.at)
-                        map.at.kind = "open"
-                    else:
-                        cheese_gotten = True
-                        map.at.kind = "open"
-                        grab()
+                spot_handler()
+
     
     end = next(cell for cell in map.cells if cell.kind == "exit")
 
@@ -309,7 +326,12 @@ def path_to_directions(cells: list[Cell]):
         elif x_delta < 0:
             yield "west"
 
+index = 0
 
 mazes = get("/mazes")
-test_maze = mazes[6]["id"]
-solve_maze(test_maze)
+print(mazes)
+maze = mazes[index]
+maze_id = maze["id"]
+cheese_count = maze["numberOfCheese"]
+test_maze = mazes[index]["id"]
+solve_maze(test_maze, cheese_count)
