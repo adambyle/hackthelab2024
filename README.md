@@ -8,7 +8,7 @@ Points are awarded or spent for performing certain actions:
 
 - Moving from one cell to another costs 3 points.
 - Performing the "exit" action on the exit cell is worth 5000 points.
-- Eating a piece of cheese is with 1000 points.
+- Eating a piece of cheese is worth 1000 points.
 - Dropping a piece of cheese off at the exit cell is worth 2500 points.
 
 Our algorithm performs a near-exhaustive traversal of the maze in search of the exit cell and every piece of cheese (the number of cheese pieces is known at the beginning). Once the exit cell and all pieces of cheese have been located, the rat carries each piece of cheese one-by-one to the exit cell, exiting the maze once it has finished. We determined that every piece of cheese would likely be worth the cost of the trip made to reach it, although we included a case in our program to ignore cheese pieces that are not worth reaching.
